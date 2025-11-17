@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Aprendeaê Alagoinhas</title>
+    <!-- Carrega o Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Define a fonte Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilização da scrollbar */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-window::-webkit-scrollbar-track {
+            background: #f1f5f9; /* gray-100 */
+            border-radius: 10px;
+        }
+        #chat-window::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* gray-400 */
+            border-radius: 10px;
+        }
+        #chat-window::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* gray-500 */
+        }
+        /* Classe para o "digitando..." */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+        }
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: 0.0s; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-200 flex items-center justify-center min-h-screen text-base">
+
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="height: 90vh;">
+        
+        <!-- Cabeçalho do Chat -->
+        <header class="bg-blue-700 text-white p-4 shadow-md z-10">
+            <h1 class="text-xl font-bold text-center">Chatbot Aprendeaê Alagoinhas</h1>
+        </header>
+        
+        <!-- Contêiner do Mascote -->
+        <div class="flex justify-center items-center p-4 bg-white border-b border-gray-200">
+            <div class="mascot-container w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center shadow-lg border-4 border-white overflow-hidden">
+                <!-- 
+                  IMPORTANTE: Substitua o 'src' abaixo pelo link da imagem do seu mascote.
+                  Exemplo: src="https://seusite.com/imagem/mascote.png"
+                -->
+                <img 
+                  src="mascote.jpg" 
+                  alt="Mascote" 
+                  class="w-full h-full object-cover"
+                  onerror="this.outerHTML = '<div class=\'text-xs text-blue-800 font-semibold p-2 text-center\'>Seu Mascote Aqui</div>'"
+                >
+            </div>
+        </div>
+
+        <!-- Janela do Chat -->
+        <main id="chat-window" class="flex-1 p-4 overflow-y-auto bg-gray-100 flex flex-col space-y-3">
+            <!-- Mensagens do chat serão inseridas aqui -->
+        </main>
+
+        <!-- Botões de Sugestão -->
+        <div id="suggestions" class="p-3 bg-white border-t border-gray-200 flex flex-wrap gap-2 justify-center overflow-y-auto" style="max-height: 110px;">
+            <!-- Sugestões serão inseridas aqui -->
+        </div>
+
+        <!-- Formulário de Entrada -->
+        <footer class="bg-white p-4 border-t border-gray-200">
+            <form id="chat-form" class="flex">
+                <input 
+                    type="text" 
+                    id="message-input" 
+                    placeholder="Digite sua dúvida aqui..." 
+                    autocomplete="off"
+                    class="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <button 
+                    type="submit"
+                    class="bg-blue-600 text-white p-3 rounded-r-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center"
+                >
+                    <!-- Ícone de Envio (SVG) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </form>
+        </footer>
+    </div>
+
+    <script>
+        // --- BASE DE CONHECIMENTO (Alimentada pelos seus documentos) ---
+        
+        const knowledgeBase = {
+            "saudacao": "Olá! Eu sou o assistente virtual do programa **Aprendeaê Alagoinhas**. Estou aqui para tirar suas dúvidas sobre as Diretrizes Pedagógicas de 2026. Como posso ajudar?",
+            
+            "aprendeae": "O **Aprendeaê Alagoinhas** é o programa institucional da SEDUC (formalizado pela Portaria Nº 39/2025). \n\nNosso compromisso é com a **Aprendizagem na Idade Certa** e a **Garantia do Direito de Aprender** para cada estudante da nossa Rede Municipal - da Educação Infantil ao Ensino Fundamental e nas modalidades da EJA, Educação Especial, Povos e Comunidades Tradicionais e Educação do Campo.",
+            
+            "eixos": "O programa **Aprendeaê Alagoinhas** está estruturado em **6 eixos estratégicos**:\n1.  Gestão da Aprendizagem Ativa\n2.  Gestão da Inclusão e Equidade\n3.  Gestão da Formação Continuada\n4.  Gestão da Integração Escola-Família-Comunidade\n5.  Gestão da Tecnologia e Inovação\n6.  Gestão do Acompanhamento Escolar.",
+            
+            "desafios2026": "Para 2026, temos **dois grandes desafios pedagógicos** principais:\n\n* **1. Alfabetização como Prática Social:** Ensinar a ler e escrever com propósito, como uma ferramenta para atuar no mundo real (baseado em Délia Lerner, Emília Ferreiro e Ana Teberosky).\n* **2. Recomposição das Aprendizagens:** Um processo intencional e com diagnóstico para identificar e preencher lacunas de conhecimento dos estudantes, usando percursos flexíveis e engajadores.",
+            
+            "tcts": "Os **TCTs (Temas Contemporâneos Transversais)** são a nossa principal estratégia! São temas como Cidadania, Meio Ambiente, Cultura Digital, Economia e Saúde. \n\nEles são a **'força propulsora'** para desenvolver as 10 competências da BNCC/RCA e tornar a aprendizagem (como a leitura e a escrita) mais significativa e conectada com a vida real dos estudantes.",
+            
+            "macroareas_tcts": "Os TCTs são divididos em **6 macroáreas** principais, de acordo com a BNCC:\n1.  Cidadania e Civismo\n2.  Ciência e Tecnologia\n3.  Economia\n4.  Meio Ambiente\n5.  Multiculturalismo\n6.  Saúde.",
+            
+            "proposta_pedagogica": "A **Proposta Pedagógica 2026-2028** (o 'Caderno de Orientações') está sendo construída por Grupos de Trabalho (GTs) da SEDUC. \n\nO foco principal dela é mostrar **como usar os TCTs** para garantir a alfabetização e a recomposição das aprendizagens. Ela trará sugestões didáticas, como Sequências de Práticas Inspiradoras, que poderão ser acessadas por QR Code!",
+
+            "gts": "A elaboração do caderno está dividida em Grupos de Trabalho (GTs). Por exemplo:\n* **GT1 (Sistematização):** Cuida da estrutura geral, capa, texto de apresentação e as 10 Competências.\n* **GT2 (Liderança):** Foca na Organização Didática e como trabalhar os TCTs.\n* **GT3 (DIE):** Trabalha a relação do Aprendeaê com o RCA e os TCTs em Alagoinhas.\n* **GT4:** Cria o instrumento de diagnóstico para as escolas.\n* **GT5:** Organiza o seminário de troca de experiências.\n* **GT6 (Designer):** Cuida da parte visual e design.",
+
+            "agradecimento": "Eu que agradeço! Se tiver mais alguma dúvida, é só perguntar. 😊",
+
+            "default": "Desculpe, ainda estou aprendendo e não tenho essa informação. 🤖 \n\nTente perguntar de outra forma sobre:\n* O programa 'Aprendeaê'\n* Os 'TCTs' (Temas Transversais)\n* Os 'desafios de 2026'\n* Os 'eixos do programa'"
+        };
+
+        const suggestions = [
+            "O que é o programa Aprendeaê?",
+            "O que são TCTs?",
+            "Quais os eixos do Aprendeaê?",
+            "Quais os desafios para 2026?",
+            "Como será a proposta pedagógica?",
+            "Quais as macroáreas dos TCTs?"
+        ];
+
+        // --- LÓGICA DO CHATBOT ---
+
+        const chatWindow = document.getElementById('chat-window');
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const suggestionsContainer = document.getElementById('suggestions');
+
+        // Evento de envio do formulário
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (message) {
+                displayMessage(message, 'user');
+                messageInput.value = '';
+                respondTo(message);
+            }
+        });
+
+        // Evento de clique nas sugestões
+        suggestionsContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const message = e.target.innerText;
+                displayMessage(message, 'user');
+                respondTo(message);
+            }
+        });
+
+        /**
+         * Adiciona uma mensagem à janela do chat.
+         * @param {string} message - O texto da mensagem.
+         * @param {string} sender - 'user' ou 'bot'.
+         */
+        function displayMessage(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('p-3', 'rounded-lg', 'max-w-sm', 'lg:max-w-lg', 'shadow-sm', 'break-words', 'leading-relaxed');
+            
+            // Converte markdown simples (negrito e listas)
+            message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            message = message.replace(/\n\* (.*?)/g, '<br>• $1');
+            message = message.replace(/\n(\d+)\. (.*?)/g, '<br>$1. $2');
+
+            messageElement.innerHTML = message;
+
+            if (sender === 'user') {
+                messageElement.classList.add('bg-blue-600', 'text-white', 'self-end', 'rounded-br-none');
+            } else {
+                messageElement.classList.add('bg-white', 'text-gray-800', 'self-start', 'rounded-bl-none', 'border', 'border-gray-200');
+            }
+
+            chatWindow.appendChild(messageElement);
+            scrollToBottom();
+        }
+
+        /**
+         * Exibe o indicador "digitando..."
+         */
+        function showTypingIndicator() {
+            const typingElement = document.createElement('div');
+            typingElement.id = 'typing-indicator';
+            typingElement.classList.add('typing-indicator', 'self-start');
+            typingElement.innerHTML = '<span></span><span></span><span></span>';
+            chatWindow.appendChild(typingElement);
+            scrollToBottom();
+        }
+
+        /**
+         * Remove o indicador "digitando..."
+         */
+        function removeTypingIndicator() {
+            const typingElement = document.getElementById('typing-indicator');
+            if (typingElement) {
+                chatWindow.removeChild(typingElement);
+            }
+        }
+
+        /**
+         * Processa a entrada do usuário e obtém uma resposta do bot.
+         * @param {string} userInput - O texto digitado pelo usuário.
+         */
+        function respondTo(userInput) {
+            showTypingIndicator();
+            const input = userInput.toLowerCase();
+            let response = knowledgeBase.default; // Resposta padrão
+
+            // Lógica de correspondência de palavras-chave
+            if (input.includes('ola') || input.includes('oi') || input.includes('bom dia') || input.includes('boa tarde')) {
+                response = knowledgeBase.saudacao;
+            } else if (input.includes('aprendeae') || input.includes('programa')) {
+                response = knowledgeBase.aprendeae;
+            } else if (input.includes('eixos') || input.includes('pilares')) {
+                response = knowledgeBase.eixos;
+            } else if (input.includes('desafios') || (input.includes('2026') && !input.includes('proposta'))) {
+                response = knowledgeBase.desafios2026;
+            } else if (input.includes('tct') || input.includes('temas')) {
+                response = knowledgeBase.tcts;
+            } else if (input.includes('macroareas') || input.includes('macro áreas') || (input.includes('quais') && input.includes('tcts'))) {
+                response = knowledgeBase.macroareas_tcts;
+            } else if (input.includes('proposta pedagógica') || input.includes('caderno') || (input.includes('como') && input.includes('2026'))) {
+                response = knowledgeBase.proposta_pedagogica;
+            } else if (input.includes('gt') || input.includes('grupos de trabalho')) {
+                response = knowledgeBase.gts;
+            } else if (input.includes('obrigado') || input.includes('obrigada') || input.includes('valeu')) {
+                response = knowledgeBase.agradecimento;
+            }
+            
+            // Simula o tempo de "pensamento" do bot
+            setTimeout(() => {
+                removeTypingIndicator();
+                displayMessage(response, 'bot');
+            }, 1000 + Math.random() * 500); // 1 a 1.5 segundos
+        }
+
+        /**
+         * Rola a janela do chat para a última mensagem.
+         */
+        function scrollToBottom() {
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        /**
+         * Carrega as sugestões iniciais.
+         */
+        function loadSuggestions() {
+            suggestionsContainer.innerHTML = ''; // Limpa sugestões antigas
+            suggestions.forEach(suggestion => {
+                const button = document.createElement('button');
+                button.classList.add('bg-blue-50', 'text-blue-700', 'p-2', 'rounded-lg', 'text-sm', 'font-medium', 'hover:bg-blue-100', 'transition', 'duration-200', 'border', 'border-blue-200');
+                button.innerText = suggestion;
+                suggestionsContainer.appendChild(button);
+            });
+        }
+
+        // --- INICIALIZAÇÃO DO CHAT ---
+        function initChat() {
+            // Exibe a saudação inicial do bot
+            setTimeout(() => {
+                displayMessage(knowledgeBase.saudacao, 'bot');
+            }, 500);
+            
+            // Carrega os botões de sugestão
+            loadSuggestions();
+        }
+
+        // Inicia o chat quando a página carregar
+        document.addEventListener('DOMContentLoaded', initChat);
+    </script>
+</body>
+</html>
